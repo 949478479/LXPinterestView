@@ -518,6 +518,7 @@
 					"-Wno-gnu-conditional-omitted-operand",
 					"-Wno-pedantic",
 					"-Weverything",
+					"-Wno-auto-import",
 				);
 			};
 			name = Debug;
@@ -537,6 +538,7 @@
 					"-Wno-gnu-conditional-omitted-operand",
 					"-Wno-pedantic",
 					"-Weverything",
+					"-Wno-auto-import",
 				);
 			};
 			name = Release;
