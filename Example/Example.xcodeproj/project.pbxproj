@@ -511,6 +511,13 @@
 				INFOPLIST_FILE = Example/Other/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				WARNING_CFLAGS = (
+					"-Weverything",
+					"-Wno-objc-missing-property-synthesis",
+					"-Wno-gnu-statement-expression",
+					"-Wno-gnu-conditional-omitted-operand",
+					"-Wno-pedantic",
+				);
 			};
 			name = Debug;
 		};
@@ -522,6 +529,13 @@
 				INFOPLIST_FILE = Example/Other/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				WARNING_CFLAGS = (
+					"-Weverything",
+					"-Wno-objc-missing-property-synthesis",
+					"-Wno-gnu-statement-expression",
+					"-Wno-gnu-conditional-omitted-operand",
+					"-Wno-pedantic",
+				);
 			};
 			name = Release;
 		};

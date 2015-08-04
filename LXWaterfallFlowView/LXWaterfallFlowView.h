@@ -63,8 +63,11 @@
 /** 数据源. */
 @property (nonatomic, weak) IBOutlet id<LXWaterfallFlowViewDataSource> dataSource;
 
-/** 刷新表格. */
-- (void)reloadData;
+/** 刷新全部表格. */
+- (void)reloadAllData;
+
+/** 拼接更多数据. */
+- (void)loadMoreData;
 
 /** 根据标识从缓存池获取 cell. */
 - (id)dequeueReusableCellWithReuseIdentifier:(NSString *)reuseIdentifier;

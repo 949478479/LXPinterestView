@@ -61,15 +61,13 @@
 
 - (void)loadNewMushrooms
 {
-    NSArray *mushrooms  = [LXMushroom objectArrayWithFilename:@"1.plist"];
-    NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, mushrooms.count)];
-    [self.mushrooms insertObjects:mushrooms atIndexes:indexes];
+    self.mushrooms = [[LXMushroom objectArrayWithFilename:@"1.plist"] mutableCopy];
 
     // 模拟网络延迟.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         [self.waterfallFlowView.header endRefreshing];
-        [self.waterfallFlowView reloadData];
+        [self.waterfallFlowView reloadAllData];
     });
 }
 
@@ -81,7 +79,7 @@
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         [self.waterfallFlowView.footer endRefreshing];
-        [self.waterfallFlowView reloadData];
+        [self.waterfallFlowView loadMoreData];
     });
 }
 

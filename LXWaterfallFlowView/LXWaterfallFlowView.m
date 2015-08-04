@@ -9,6 +9,34 @@
 #import "LXWaterfallFlowView.h"
 #import "LXWaterfallFlowViewCell.h"
 
+#pragma mark - NSArray (LXExtension)
+
+@implementation NSArray (LXExtension)
+
+- (void)lx_getMinValueAndIndexWithBlock:(void(^)(NSUInteger index, NSNumber *minValue))block
+{
+    NSNumber   *temp     = nil;
+    NSUInteger index     = 0;
+    NSNumber   *minValue = self[0];
+
+    NSUInteger count = self.count;
+    for (NSUInteger i = 1; i < count; ++i) {
+        temp = self[i];
+        if ([temp compare:minValue] == NSOrderedAscending) {
+            minValue = temp;
+            index = i;
+        }
+    }
+
+    if (block) {
+        block(index, minValue);
+    }
+}
+
+@end
+
+#pragma mark - LXWaterfallFlowView
+
 /** 对小数像素进行四舍五入. */
 static inline CGFloat LXPixelRound(CGFloat value, CGFloat scale)
 {
@@ -32,7 +60,13 @@ static const NSInteger kNumberOfColumns = 3;
 /** 所有屏幕上的可见 cell. */
 @property (nonatomic, strong) NSMutableDictionary *visibleCells;
 
-/** 记录最新一次的 frame. */
+/** cell 总数. */
+@property (nonatomic, assign) NSUInteger numberOfCells;
+
+/** 储存各列高度的数组. */
+@property (nonatomic, strong) NSMutableArray *columnHeights;
+
+/** 记录 ScrollView 上一次的 frame. */
 @property (nonatomic, assign) CGRect lastFrame;
 
 @end
@@ -73,6 +107,7 @@ static const NSInteger kNumberOfColumns = 3;
     _cellFrames      = [NSMutableArray new];
     _visibleCells    = [NSMutableDictionary new];
 
+    // 若未启用自动布局则自动拉伸,旋屏时自动调整尺寸.
     if (self.translatesAutoresizingMaskIntoConstraints) {
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
@@ -81,18 +116,45 @@ static const NSInteger kNumberOfColumns = 3;
 
 #pragma mark - 刷新表格
 
-- (void)reloadData
+- (void)reloadAllData
 {
-    [self p_clearData];
+    [self p_prepareForReloadAllData];
 
-    [self p_calculateFrameOfCell];
+    [self p_calculateCellFrame];
 
     [self p_setContentSize];
 }
 
-- (void)p_clearData
+- (void)loadMoreData
 {
-    // 移除屏幕上的 cell, 加入重用池.不移除旋屏时会有个别重叠的情况.
+    [self p_prepareForLoadMoreData];
+    
+    [self p_calculateCellFrame];
+
+    [self p_setContentSize];
+}
+
+- (void)p_prepareForLoadMoreData
+{
+    self.numberOfCells = [self.dataSource numberOfCellsInWaterfallFlowView:self];
+}
+
+- (void)p_prepareForReloadAllData
+{
+    // 更新必要数据.
+    if ([self.dataSource respondsToSelector:@selector(numberOfColumnsInWaterfallFlowView:)]) {
+        self.numberOfColumns = [self.delegate numberOfColumnsInWaterfallFlowView:self];
+    }
+    
+    [self p_prepareForLoadMoreData];
+
+    // 重置高度数组.
+    self.columnHeights = [NSMutableArray new];
+    for (NSInteger i = 0; i < self.numberOfColumns; ++i) {
+        self.columnHeights[i] = @(self.sectionInset.top);
+    }
+
+    // 移除屏幕上的 cell, 加入重用池.不移除可能会有个别重叠的情况.
     NSArray *visibleCells = self.visibleCells.allValues;
     [self.reusableCells addObjectsFromArray:visibleCells];
     [visibleCells makeObjectsPerformSelector:@selector(removeFromSuperview)];
@@ -104,75 +166,64 @@ static const NSInteger kNumberOfColumns = 3;
 
 - (CGFloat)p_widthOfCell
 {
-    // 询问代理应该显示的列数,否则使用默认值.
-    if ([self.dataSource respondsToSelector:@selector(numberOfColumnsInWaterfallFlowView:)]) {
-        self.numberOfColumns = [self.delegate numberOfColumnsInWaterfallFlowView:self];
-    }
+    // 列间距总和.
+    CGFloat totalOfMargin = (self.numberOfColumns - 1) * self.columnSpacing;
 
-    CGFloat totalOfMargin     = (self.numberOfColumns - 1) * self.columnSpacing;
-    CGFloat totalOfValidWidth = self.bounds.size.width - self.sectionInset.left - self.sectionInset.right;
+    // 父视图总宽度去掉两侧间距.
+    CGFloat totalOfValidWidth =
+        self.bounds.size.width - self.sectionInset.left - self.sectionInset.right;
 
     return (totalOfValidWidth - totalOfMargin) / self.numberOfColumns;
 }
 
-- (CGFloat)p_maxYForShortestColumnInArrayOfColumnMaxY:(const CGFloat [])arrayOfColumnMaxY
-                                              atIndex:(NSUInteger *)index
-                                      withArrayLength:(NSUInteger)length
+- (void)p_calculateCellFrame
 {
-    *index = 0;
-    for (NSUInteger i = 1; i < length; ++i) {
-        if (arrayOfColumnMaxY[i] < arrayOfColumnMaxY[*index]) {
-            *index = i;
-        }
-    }
-    return arrayOfColumnMaxY[*index];
-}
+    CGFloat    widthOfCell     = self.p_widthOfCell;
+    NSUInteger numberOfCells   = self.numberOfCells;
+    NSUInteger numberOfColumns = self.numberOfColumns;
 
-- (void)p_calculateFrameOfCell
-{
-    CGFloat   widthOfCell   = [self p_widthOfCell];
-    NSInteger numberOfCells = [self.dataSource numberOfCellsInWaterfallFlowView:self];
+    CGFloat scale = [UIScreen mainScreen].scale;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wvla"
-    // 记录每列 maxY 的数组.
-    CGFloat arrayOfColumnMaxY[self.numberOfColumns];
-    for (NSInteger i = 0; i < self.numberOfColumns; ++i) {
-        arrayOfColumnMaxY[i] = self.sectionInset.top;
-    }
-#pragma clang diagnostic pop
+    __block NSUInteger shortestColumn;
+    __block NSNumber   *minHeight;
 
-    CGFloat scale  = [UIScreen mainScreen].scale;
-    for (NSInteger index = 0; index < numberOfCells; ++index) {
+    // 在上次索引的基础上计算新增加的 cell 的 frame, 上次索引可能是0.
+    for (NSUInteger idx = self.cellFrames.count; idx < numberOfCells; ++idx) {
 
-        NSUInteger shortestColumn;
-        CGFloat maxYForShortestColumn =
-            [self p_maxYForShortestColumnInArrayOfColumnMaxY:arrayOfColumnMaxY
-                                                     atIndex:&shortestColumn
-                                             withArrayLength:self.numberOfColumns];
+        // 获取最矮的一列的索引及其高度.
+        [self.columnHeights lx_getMinValueAndIndexWithBlock:
+         ^(NSUInteger index, NSNumber *minValue) {
+             minHeight      = minValue;
+             shortestColumn = index;
+         }];
 
-        CGFloat x = self.sectionInset.left + (widthOfCell + self.columnSpacing) * shortestColumn;
-        CGFloat y = (index < self.numberOfColumns) ?
-            maxYForShortestColumn : (maxYForShortestColumn + self.rowSpacing);
+        CGFloat x =
+            self.sectionInset.left + (widthOfCell + self.columnSpacing) * shortestColumn;
+
+        // 第 0 行需加上顶部间距.
+        CGFloat y = (idx < numberOfColumns) ?
+            [minHeight doubleValue] : ([minHeight doubleValue] + self.rowSpacing);
 
         CGFloat height = [self.delegate waterfallFlowView:self
-                                   cellHeightForWidth:widthOfCell
-                                              atIndex:index];
-        CGRect  frame  = {
+                                       cellHeightForWidth:widthOfCell
+                                                  atIndex:idx];
+        // 对 frame 做一下舍入处理,避免小数像素.
+        CGRect frame = {
             LXPixelRound(x, scale),
             LXPixelRound(y, scale),
             LXPixelRound(widthOfCell, scale),
             LXPixelRound(height, scale)
         };
 
-        [self.cellFrames addObject:[NSValue valueWithCGRect:frame]];
+        [self.cellFrames addObject:[NSValue valueWithCGRect:frame]]; // 将计算出的 frame 存起来.
 
-        arrayOfColumnMaxY[shortestColumn] = CGRectGetMaxY(frame);
+        self.columnHeights[shortestColumn] = @(height + y); // 更新高度数组记录.
     }
 }
 
 - (void)p_setContentSize
 {
+    // 获取最高一列的高度.
     NSUInteger count      = self.cellFrames.count;
     CGFloat    tempHeight = 0;
     CGFloat    maxHeight  = CGRectGetMaxY([self.cellFrames.lastObject CGRectValue]);
@@ -182,6 +233,7 @@ static const NSInteger kNumberOfColumns = 3;
         maxHeight  = (maxHeight < tempHeight) ? tempHeight : maxHeight;
     }
 
+    // 根据最高列的高度设置滚动范围.
     self.contentSize = (CGSize){ 0, maxHeight + self.sectionInset.bottom };
 }
 
@@ -189,6 +241,9 @@ static const NSInteger kNumberOfColumns = 3;
 
 - (id)dequeueReusableCellWithReuseIdentifier:(NSString *)identifier
 {
+    if (!identifier) { return nil; }
+
+    // 根据标识符从重用池获取 cell.
     LXWaterfallFlowViewCell *reusableCell;
     for (LXWaterfallFlowViewCell *cell in self.reusableCells) {
         if ([cell.reuseIdentifier isEqualToString:identifier]) {
@@ -197,6 +252,9 @@ static const NSInteger kNumberOfColumns = 3;
             break;
         }
     }
+
+    [reusableCell prepareForReuse];
+
     return reusableCell;
 }
 
@@ -219,25 +277,18 @@ static const NSInteger kNumberOfColumns = 3;
 {
     [super layoutSubviews];
 
+    // ScrollView frame 发生变化时刷新表格,重新布局.
     if (!CGRectEqualToRect(self.frame, self.lastFrame)) {
         self.lastFrame = self.frame;
-        [self reloadData];
+        [self reloadAllData];
     }
 
-    [self p_reuseCell];
-}
-
-- (void)p_reuseCell
-{
     [self p_recycleCell];
-
-    NSInteger index = [self p_indexOfAnyCellOnScreen];
-    [self p_traverseForwardFromIndex:index];
-    [self p_traverseBackwardFromIndex:index - 1];
 }
 
 - (void)p_recycleCell
 {
+    // 移除父视图上已滚出屏幕的 cell, 加入重用池.
     for (UIView *cell in self.visibleCells.allValues) {
         if (![self p_isFrameOnScreen:cell.frame]) {
             [cell removeFromSuperview];
@@ -245,6 +296,12 @@ static const NSInteger kNumberOfColumns = 3;
             [self.visibleCells removeObjectForKey:[NSValue valueWithCGRect:cell.frame]];
         }
     }
+
+    // 分别沿上下两个方向(即数组中往前和往后)判断 cell 是否应该显示在屏幕上.
+    NSInteger index = [self p_indexOfAnyCellOnScreen];
+
+    [self p_traverseForwardFromIndex:index];
+    [self p_traverseBackwardFromIndex:index - 1];
 }
 
 - (void)p_traverseForwardFromIndex:(NSInteger)index
@@ -304,7 +361,7 @@ static const NSInteger kNumberOfColumns = 3;
     NSInteger count = self.cellFrames.count;
     NSInteger low = 0, high = count - 1, mid = NSNotFound;
 
-    // 二分查找找出一个在屏幕上的 cell.
+    // 二分查找找出任意一个在屏幕上的 cell.
     while (low <= high) {
         mid = (low + high) / 2;
 

@@ -204,7 +204,7 @@ static inline NSString * LXCachePath()
                                                          completionHandler:
                                       ^(NSData *data, NSURLResponse *response, NSError *error) {
 
-        if ( ((NSHTTPURLResponse *)response).statusCode == 200 ) {
+        if ( (int64_t)data.length == response.expectedContentLength ) {
 
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
