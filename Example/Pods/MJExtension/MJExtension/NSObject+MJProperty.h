@@ -24,22 +24,22 @@ typedef void (^MJClassesEnumeration)(Class c, BOOL *stop);
 typedef void (^MJPropertiesEnumeration)(MJProperty *property, BOOL *stop);
 
 /** 将属性名换为其他key去字典中取值 */
-typedef NSDictionary * (^MJReplacedKeyFromPropertyName)();
+typedef NSDictionary * (^MJReplacedKeyFromPropertyName)(void);
 typedef NSString * (^MJReplacedKeyFromPropertyName121)(NSString *propertyName);
 /** 数组中需要转换的模型类 */
-typedef NSDictionary * (^MJObjectClassInArray)();
+typedef NSDictionary * (^MJObjectClassInArray)(void);
 /** 用于过滤字典中的值 */
 typedef id (^MJNewValueFromOldValue)(id object, id oldValue, MJProperty *property);
 
 /** 这个数组中的属性名才会进行字典和模型的转换 */
-typedef NSArray * (^MJAllowedPropertyNames)();
+typedef NSArray * (^MJAllowedPropertyNames)(void);
 /** 这个数组中的属性名才会进行归档 */
-typedef NSArray * (^MJAllowedCodingPropertyNames)();
+typedef NSArray * (^MJAllowedCodingPropertyNames)(void);
 
 /** 这个数组中的属性名将会被忽略：不进行字典和模型的转换 */
-typedef NSArray * (^MJIgnoredPropertyNames)();
+typedef NSArray * (^MJIgnoredPropertyNames)(void);
 /** 这个数组中的属性名将会被忽略：不进行归档 */
-typedef NSArray * (^MJIgnoredCodingPropertyNames)();
+typedef NSArray * (^MJIgnoredCodingPropertyNames)(void);
 
 @interface NSObject (MJProperty)
 #pragma mark - 遍历

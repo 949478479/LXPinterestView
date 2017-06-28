@@ -1,6 +1,6 @@
 //
 //  LXImageCache.m
-//  LXWaterfallFlowView
+//  LXPinterestView
 //
 //  Created by 从今以后 on 15/7/15.
 //  Copyright (c) 2015年 从今以后. All rights reserved.

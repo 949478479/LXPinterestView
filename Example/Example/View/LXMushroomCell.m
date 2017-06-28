@@ -1,6 +1,6 @@
 //
 //  MushroomCell.m
-//  LXWaterfallFlowView
+//  LXPinterestView
 //
 //  Created by 从今以后 on 15/7/11.
 //  Copyright (c) 2015年 从今以后. All rights reserved.
@@ -8,7 +8,7 @@
 
 #import "LXMushroom.h"
 #import "LXMushroomCell.h"
-#import "LXWaterfallFlowView.h"
+#import "LXPinterestView.h"
 #import "UIImageView+LXLoadImage.h"
 
 /** 价格标签高度. */
@@ -48,7 +48,7 @@ static const CGFloat kLabelHeight = 21;
     return self;
 }
 
-+ (instancetype)cellWithWaterFlowView:(LXWaterfallFlowView *)waterFlowView
++ (instancetype)cellWithWaterFlowView:(LXPinterestView *)waterFlowView
 {
     static NSString *reuseIdentifier = @"mushroom";
 

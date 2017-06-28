@@ -1,6 +1,6 @@
 //
 //  ViewController.m
-//  LXWaterfallFlowView
+//  LXPinterestView
 //
 //  Created by 从今以后 on 15/7/11.
 //  Copyright (c) 2015年 从今以后. All rights reserved.
@@ -12,13 +12,13 @@
 #import "LXMushroom.h"
 #import "LXImageCache.h"
 #import "LXMushroomCell.h"
+#import "LXPinterestView.h"
 #import "LXViewController.h"
-#import "LXWaterfallFlowView.h"
 
-@interface LXViewController () <LXWaterfallFlowViewDataSource, LXWaterfallFlowViewDelegate>
+@interface LXViewController () <LXPinterestViewDataSource, LXPinterestViewDelegate>
 
-/** LXWaterfallFlowView 控件. */
-@property (nonatomic, strong) IBOutlet LXWaterfallFlowView *waterfallFlowView;
+/** LXPinterestView 控件. */
+@property (nonatomic, strong) IBOutlet LXPinterestView *waterfallFlowView;
 
 /** 蘑菇们. */
 @property (nonatomic, strong) NSMutableArray *mushrooms;
@@ -95,14 +95,14 @@
     [[LXImageCache sharedImageCache] clearDiskCache];
 }
 
-#pragma mark - LXWaterfallFlowViewDataSource
+#pragma mark - LXPinterestViewDataSource
 
-- (NSInteger)numberOfCellsInWaterfallFlowView:(LXWaterfallFlowView *)waterfallFlowView
+- (NSInteger)numberOfCellsInWaterfallFlowView:(LXPinterestView *)waterfallFlowView
 {
     return self.mushrooms.count;
 }
 
-- (LXWaterfallFlowViewCell *)waterfallFlowView:(LXWaterfallFlowView *)waterfallFlowView
+- (LXPinterestViewCell *)waterfallFlowView:(LXPinterestView *)waterfallFlowView
                                    cellAtIndex:(NSInteger)index
 {
     LXMushroomCell *cell = [LXMushroomCell cellWithWaterFlowView:waterfallFlowView];
@@ -110,9 +110,9 @@
     return cell;
 }
 
-#pragma mark - LXWaterfallFlowViewDelegate
+#pragma mark - LXPinterestViewDelegate
 
-- (CGFloat)waterfallFlowView:(LXWaterfallFlowView *)waterfallFlowView
+- (CGFloat)waterfallFlowView:(LXPinterestView *)waterfallFlowView
           cellHeightForWidth:(CGFloat)width
                      atIndex:(NSInteger)index
 {
@@ -120,12 +120,12 @@
     return width * mushroom.h / mushroom.w;
 }
 
-- (NSInteger)numberOfColumnsInWaterfallFlowView:(LXWaterfallFlowView *)waterfallFlowView
+- (NSInteger)numberOfColumnsInWaterfallFlowView:(LXPinterestView *)waterfallFlowView
 {
     return (UIUserInterfaceSizeClassCompact == self.traitCollection.verticalSizeClass) ? 5 : 3;
 }
 
-- (void)waterfallFlowView:(LXWaterfallFlowView *)waterfallFlowView
+- (void)waterfallFlowView:(LXPinterestView *)waterfallFlowView
      didSelectCellAtIndex:(NSInteger)index
 {
     LXMushroomCell *cell = (LXMushroomCell *)[waterfallFlowView cellAtIndex:index];
