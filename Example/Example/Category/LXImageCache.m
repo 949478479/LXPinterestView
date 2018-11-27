@@ -15,7 +15,7 @@ static inline NSString * LXCachePath()
                 stringByAppendingPathComponent:@"LXImageCaches"];
 }
 
-@interface LXImageCache ()
+@interface LXImageCache () <NSURLSessionDelegate>
 
 /** 内存缓存. */
 @property (nonatomic, strong) NSCache *memoryCache;
@@ -36,6 +36,20 @@ static inline NSString * LXCachePath()
 
 @implementation LXImageCache
 
+#pragma mark - <NSURLSessionDelegate>
+
+- (void)URLSession:(NSURLSession *)session
+didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
+ completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+{
+    if ([challenge.protectionSpace authenticationMethod] == NSURLAuthenticationMethodServerTrust) {
+        NSURLCredential *credential = [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust];
+        completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+    } else {
+        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+    }
+}
+
 #pragma mark - 下载会话
 
 - (NSURLSession *)downloadSession
@@ -45,7 +59,7 @@ static inline NSString * LXCachePath()
             NSURLSessionConfiguration *configuration =
                 [NSURLSessionConfiguration ephemeralSessionConfiguration];
             configuration.URLCache = nil;
-            [NSURLSession sessionWithConfiguration:configuration];
+            [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
         });
     }
     return _downloadSession;
