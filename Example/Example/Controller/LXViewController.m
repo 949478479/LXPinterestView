@@ -49,9 +49,10 @@
 
 - (void)p_setupRefreshView
 {
-    self.waterfallFlowView.header =
-        [MJRefreshNormalHeader headerWithRefreshingTarget:self
-                                         refreshingAction:@selector(loadNewMushrooms)];
+    // iOS 12 发现头视图会导致 contentOffset 不太正常，因此去掉
+//    self.waterfallFlowView.header =
+//        [MJRefreshNormalHeader headerWithRefreshingTarget:self
+//                                         refreshingAction:@selector(loadNewMushrooms)];
     self.waterfallFlowView.footer =
         [MJRefreshBackNormalFooter footerWithRefreshingTarget:self
                                              refreshingAction:@selector(loadMoreMushrooms)];
