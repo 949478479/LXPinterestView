@@ -10,34 +10,31 @@
 #import "MJExtensionConst.h"
 #import <CoreData/CoreData.h>
 
-static NSSet *_foundationClasses;
-
 @implementation MJFoundation
-
-+ (NSSet *)foundatonClasses
-{
-    if (_foundationClasses == nil) {
-        // 集合中没有NSObject，因为几乎所有的类都是继承自NSObject，具体是不是NSObject需要特殊判断
-        _foundationClasses = [NSSet setWithObjects:
-                              [NSURL class],
-                              [NSDate class],
-                              [NSValue class],
-                              [NSData class],
-                              [NSArray class],
-                              [NSDictionary class],
-                              [NSString class],
-                              [NSAttributedString class], nil];
-    }
-    return _foundationClasses;
-}
 
 + (BOOL)isClassFromFoundation:(Class)c
 {
     if (c == [NSObject class] || c == [NSManagedObject class]) return YES;
     
+    static NSSet *foundationClasses;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // 集合中没有NSObject，因为几乎所有的类都是继承自NSObject，具体是不是NSObject需要特殊判断
+        foundationClasses = [NSSet setWithObjects:
+                              [NSURL class],
+                              [NSDate class],
+                              [NSValue class],
+                              [NSData class],
+                              [NSError class],
+                              [NSArray class],
+                              [NSDictionary class],
+                              [NSString class],
+                              [NSAttributedString class], nil];
+    });
+    
     __block BOOL result = NO;
-    [[self foundatonClasses] enumerateObjectsUsingBlock:^(Class foundationClass, BOOL *stop) {
-        if (c == foundationClass || [c isSubclassOfClass:foundationClass]) {
+    [foundationClasses enumerateObjectsUsingBlock:^(Class foundationClass, BOOL *stop) {
+        if ([c isSubclassOfClass:foundationClass]) {
             result = YES;
             *stop = YES;
         }
